@@ -1,0 +1,55 @@
+@page "/event-list"
+@using EventEaseApp.Models
+@using EventEaseApp.Services
+
+<h3>Event Manager</h3>
+
+<EditForm Model="@NewEvent">
+    <div>
+        <label>Event Name:</label>
+        <input type="text" @bind="NewEvent.Name" />
+    </div>
+
+    <div>
+        <label>Event Date:</label>
+        <input type="date" @bind="NewEvent.Date" />
+    </div>
+
+    <div>
+        <label>Location:</label>
+        <input type="text" @bind="NewEvent.Location" />
+    </div>
+
+    <button @onclick="AddEvent">Add Event</button>
+</EditForm>
+
+<hr />
+
+<h3>Event List:</h3>
+<ul>
+    @foreach (var eventItem in Events)
+    {
+        <li>
+            <b>@eventItem.Name</b> - @eventItem.Date.ToShortDateString() at @eventItem.Location
+        </li>
+    }
+</ul>
+
+@code {
+    private List<Event> Events = new();
+    private Event NewEvent = new();
+
+    private void AddEvent()
+    {
+        Events.Add(new Event
+        {
+            Name = NewEvent.Name,
+            Date = NewEvent.Date,
+            Location = NewEvent.Location
+        });
+
+        // Clear the input fields after adding
+        NewEvent = new();
+    }
+}
+

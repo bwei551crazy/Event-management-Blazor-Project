@@ -1,0 +1,60 @@
+@page "/event-registration"
+@using Blazored.LocalStorage;
+@inject ILocalStorageService LocalStorage
+
+<h3 class="title">Register for an Event</h3>
+<p>Current Active Users: @activeUsers</p> <!-- Display number of users on page -->
+
+<div class="registration-container">
+    <form class="registration-form">
+        <label>Name:</label>
+        <input type="text" @bind="RegistrationName" class="input-field" required/>
+
+        <label>Email:</label>
+        <input type="email" @bind="RegistrationEmail" class="input-field" required />
+
+        <button @onclick="Register" class="register-btn">Register</button>
+    </form>
+</div>
+
+@if (RegistrationSuccess)
+{
+    <p class="success-message">Registration successful!</p>
+}
+
+@if (!string.IsNullOrEmpty(validationMessage))
+{
+    <p class="error-message">@validationMessage</p>
+}
+
+@code {
+    private string RegistrationName = string.Empty;
+    private string RegistrationEmail = string.Empty;
+    private bool RegistrationSuccess = false;
+    private int activeUsers;
+    private string validationMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userCount = await LocalStorage.GetItemAsync<int>("ActiveUsers");
+        activeUsers = userCount + 1; // Increment count
+        await LocalStorage.SetItemAsync("ActiveUsers", activeUsers);
+    }
+
+    private void Register()
+    {
+        if (string.IsNullOrWhiteSpace(RegistrationName) || string.IsNullOrWhiteSpace(RegistrationEmail))
+        {
+            validationMessage = "Both fields are required!";
+            return;
+        }
+
+        if (!RegistrationEmail.Contains("@"))
+        {
+            validationMessage = "Invalid email format!";
+            return;
+        }
+        RegistrationSuccess = true;
+        validationMessage = string.Empty;
+    }
+}

@@ -1,0 +1,35 @@
+@page "/event-details/{eventId:int}"
+@using EventEaseApp.Models
+@using EventEaseApp.Services
+@inject EventService EventService
+@* @inject NavigationManager NavManager *@
+
+<div class="event-details-container">
+    <h3 class="title">Event Details</h3>
+
+    @if (SelectedEvent != null)
+    {
+        <div class="event-info">
+            <p><b>Name:</b> @SelectedEvent.Name</p>
+            <p><b>Date:</b> @SelectedEvent.Date.ToShortDateString()</p>
+            <p><b>Location:</b> @SelectedEvent.Location</p>
+        </div>
+    }
+    else
+    {
+        <p class="error-message">Event not found.</p>
+    }
+
+    <a href="/events" class="back-link"> Back to Event List</a>
+</div>
+
+@code {
+    [Parameter] public int eventId { get; set; }
+    private Event? SelectedEvent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SelectedEvent = await EventService.GetEventById(eventId);
+    }
+}
+

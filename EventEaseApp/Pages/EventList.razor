@@ -1,0 +1,150 @@
+@page "/events"
+@using EventEaseApp.Services
+@using EventEaseApp.Models
+@inject EventService EventService
+
+<div class="event-list-container">
+    <h3>Event Manager</h3>
+
+    @if (!string.IsNullOrEmpty(validationMessage))
+    {
+        <p class="error-message">@validationMessage</p>
+    }
+
+    <EditForm Model="@NewEvent" class="event-form">
+        <div class="form-group">
+            <label>Event Name:</label>
+            <input type="text" @bind="NewEvent.Name" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>Event Date:</label>
+            <input type="date" @bind="NewEvent.Date" class="form-control"/>
+        </div>
+
+        <div class="form-group">
+            <label>Location:</label>
+            <input type="text" @bind="NewEvent.Location" class="form-control"/>
+        </div>
+
+        <button @onclick="async () => await HandleSaveOrAdd()" class="btn btn-primary">@(isEditing ? "Save Changes" : "Add Event")</button>
+
+        @if (isEditing)
+        {
+            <button @onclick="CancelEdit" class="btn btn-secondary">Cancel</button>
+        }
+    </EditForm>
+
+    <hr />
+
+    <h3>Event List:</h3>
+    <ul class="event-list">
+        @foreach (var eventItem in Events)
+        {
+            <li class="event-item">
+                @* <b>ID: @eventItem.Id</b> - <b>@eventItem.Name</b> - @eventItem.Date.ToShortDateString() at @eventItem.Location  ----DEBUG PURPOSE ---*@ 
+                <b>@eventItem.Name</b> - @eventItem.Date.ToShortDateString() at @eventItem.Location
+                <div class="event-actions">
+                    <button @onclick="() => EditEvent(eventItem)" class="delete-btn">Edit</button>
+                    <button @onclick="() => DeleteEvent(eventItem.Id)" class="delete-btn">Delete</button>
+                    <a href="/event-details/@eventItem.Id" class="details-link">View Details</a>
+                </div>
+            </li>
+        }
+    </ul>
+</div>
+
+@code {
+    private List<Event> Events = new();
+    private Event NewEvent = new();
+    private bool isEditing = false; // Flag to track whether in Edit mode
+    private string validationMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Events = await EventService.GetEvents();
+    }
+
+
+    private async Task HandleSaveOrAdd()
+    {
+
+        if (string.IsNullOrWhiteSpace(NewEvent.Name) || 
+        string.IsNullOrWhiteSpace(NewEvent.Location))
+        {
+            validationMessage = "All fields must be filled!";
+            return; // Prevent adding if fields are empty
+        }
+
+        // Check for duplicate event
+        @* if (!isEditing) 
+        { *@
+        if (Events.Any(e => e.Id != NewEvent.Id && e.Name == NewEvent.Name && e.Date == NewEvent.Date && e.Location == NewEvent.Location))
+        {
+            validationMessage = "An event with this name and date already exists!";
+            return;
+        }
+        @* } *@
+
+        // Clear error message
+        validationMessage = string.Empty;
+
+        if (isEditing)
+        {
+            await SaveEvent();
+        }
+        else
+        {
+            await AddEvent();
+        }
+    }
+    private async Task AddEvent()
+    {
+        await EventService.AddEvent(NewEvent);
+        Events = await EventService.GetEvents(); // Refresh list
+        NewEvent = new(); // Clear form
+    }
+
+    private void EditEvent(Event eventItem)
+    {
+        NewEvent = new Event
+        {
+            Id = eventItem.Id,
+            Name = eventItem.Name,
+            Date = eventItem.Date,
+            Location = eventItem.Location
+        };
+        isEditing = true; // Switch to edit mode
+    }
+
+    private async Task SaveEvent()
+    {
+        await EventService.UpdateEvent(NewEvent);
+        @* Events = new List<Event>(EventService.GetEvents()); *@
+        var existingEvent =  Events.FirstOrDefault(e => e.Id == NewEvent.Id);
+        if (existingEvent != null)
+        {
+            existingEvent.Name = NewEvent.Name;
+            existingEvent.Date = NewEvent.Date;
+            existingEvent.Location = NewEvent.Location;
+        }
+        NewEvent = new(); // Clear the form
+        isEditing = false;
+    }
+
+    private async Task DeleteEvent(int id)
+    {
+        await EventService.DeleteEvent(id);
+        @* Events = EventService.GetEvents(); *@
+        Events.RemoveAll(e => e.Id == id);
+        StateHasChanged(); // Force UI refresh
+    }
+
+    private void CancelEdit()
+    {
+        NewEvent = new(); // Clear the input fields
+        isEditing = false; // Exit edit mode
+        validationMessage = string.Empty; // Clear any error messages
+    }
+}
+
